@@ -1,27 +1,31 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CheckCircle } from "lucide-react";
-import { mockProjects, mockRequirements } from "@/data/mockData";
-import { Project, Requirement } from "@/types";
+import { Requirement, Project } from "@/types";
+import { useRequirements } from "@/hooks/useRequirements";
 
 interface ProjectViewProps {
-  projectId: string;
+  project: Project;
   onBack: () => void;
 }
 
-export function ProjectView({ projectId, onBack }: ProjectViewProps) {
-  const project = mockProjects.find(p => p.id === projectId);
-  const requirements = mockRequirements.filter(r => r.projectId === projectId);
-  const completedRequirements = requirements.filter(r => r.status === 'Done');
-  const progressPercentage = requirements.length > 0 ? (completedRequirements.length / requirements.length) * 100 : 0;
+// Utility to format dates safely
+function formatDate(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return '';
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (!date || isNaN(date.getTime())) return '';
+  // Format as e.g. Jun 25, 2025
+  return date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
-  if (!project) {
-    return <div>Project not found</div>;
-  }
+export function ProjectView({ project, onBack }: ProjectViewProps) {
+  const { requirements } = useRequirements();
+  const projectRequirements = requirements.filter(r => r.projectId === project.id);
+  const completedRequirements = projectRequirements.filter(r => r.status === 'Done');
+  const progressPercentage = projectRequirements.length > 0 ? (completedRequirements.length / projectRequirements.length) * 100 : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -58,16 +62,14 @@ export function ProjectView({ projectId, onBack }: ProjectViewProps) {
                 {project.status}
               </Badge>
             </div>
-            
             <div className="space-y-2">
               <p><strong>Client:</strong> {project.client}</p>
               {project.clientEmail && <p><strong>Email:</strong> {project.clientEmail}</p>}
               {project.clientPhone && <p><strong>Phone:</strong> {project.clientPhone}</p>}
-              <p><strong>Start:</strong> {new Date(project.startDate).toLocaleDateString()}</p>
-              <p><strong>Deadline:</strong> {new Date(project.deadline).toLocaleDateString()}</p>
+              <p><strong>Start:</strong> {formatDate(project.start_date || project.startDate)}</p>
+              <p><strong>Deadline:</strong> {formatDate(project.deadline || project.endDate)}</p>
               <p><strong>Budget:</strong> ৳{project.budget.toLocaleString()}</p>
             </div>
-            
             <div>
               <p className="text-sm font-medium mb-2">Description</p>
               <p className="text-sm text-gray-600">{project.description}</p>
@@ -88,10 +90,9 @@ export function ProjectView({ projectId, onBack }: ProjectViewProps) {
               </div>
               <Progress value={progressPercentage} className="h-3" />
               <p className="text-sm text-gray-600 mt-2">
-                {completedRequirements.length} of {requirements.length} requirements completed
+                {completedRequirements.length} of {projectRequirements.length} requirements completed
               </p>
             </div>
-
             <div>
               <h3 className="text-lg font-semibold mb-4">Milestones (Completed Requirements)</h3>
               <div className="space-y-3">
@@ -124,19 +125,15 @@ export function ProjectView({ projectId, onBack }: ProjectViewProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {requirements.map((requirement) => (
+            {projectRequirements.map((requirement) => (
               <div key={requirement.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
                   <p className="font-medium">{requirement.title}</p>
                   <p className="text-sm text-gray-600">{requirement.description}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className={`${requirement.priority === 'High' ? 'bg-red-100 text-red-800' : requirement.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                    {requirement.priority}
-                  </Badge>
-                  <Badge className={`${requirement.status === 'Done' ? 'bg-green-100 text-green-800' : requirement.status === 'In Review' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {requirement.status}
-                  </Badge>
+                  <Badge className={`${requirement.priority === 'High' ? 'bg-red-100 text-red-800' : requirement.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{requirement.priority}</Badge>
+                  <Badge className={`${requirement.status === 'Done' ? 'bg-green-100 text-green-800' : requirement.status === 'In Review' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{requirement.status}</Badge>
                 </div>
               </div>
             ))}
