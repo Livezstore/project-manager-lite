@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,13 @@ export function ProjectsManager() {
   });
 
   if (viewingProject) {
-    return <ProjectView projectId={viewingProject} onBack={() => setViewingProject(null)} />;
+    const project = projects.find(p => p.id === viewingProject);
+    if (!project) {
+      // Defensive: reset view and avoid rendering undefined project
+      setViewingProject(null);
+      return null;
+    }
+    return <ProjectView project={project} onBack={() => setViewingProject(null)} />;
   }
 
   const resetForm = () => {
