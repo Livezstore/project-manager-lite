@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProjects, Project } from "@/hooks/useProjects";
-import { Plus, Edit, Trash2, Eye, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Loader2, EyeOff } from "lucide-react";
 import { ProjectView } from "./ProjectView";
 
 export function ProjectsManager() {
@@ -18,6 +18,8 @@ export function ProjectsManager() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [viewingProject, setViewingProject] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showBudgetId, setShowBudgetId] = useState<string | null>(null);
+  const budgetTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -111,6 +113,17 @@ export function ProjectsManager() {
       case 'Planning': return 'bg-yellow-100 text-yellow-800';
       case 'On Hold': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleToggleBudget = (id: string) => {
+    if (showBudgetId === id) {
+      setShowBudgetId(null);
+      if (budgetTimeout.current) clearTimeout(budgetTimeout.current);
+    } else {
+      setShowBudgetId(id);
+      if (budgetTimeout.current) clearTimeout(budgetTimeout.current);
+      budgetTimeout.current = setTimeout(() => setShowBudgetId(null), 5000);
     }
   };
 
@@ -306,7 +319,19 @@ export function ProjectsManager() {
                       <TableCell className="hidden md:table-cell">
                         {new Date(project.deadline).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="font-mono">৳{project.budget.toLocaleString()}</TableCell>
+                      <TableCell className="font-mono">
+                        <span className="flex items-center gap-2">
+                          {showBudgetId === project.id ? `৳${project.budget.toLocaleString()}` : '*****'}
+                          <button
+                            className="ml-1 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                            onClick={() => handleToggleBudget(project.id)}
+                            type="button"
+                            aria-label={showBudgetId === project.id ? 'Hide budget' : 'Show budget'}
+                          >
+                            {showBudgetId === project.id ? <EyeOff className="w-5 h-5 text-black align-middle" /> : <Eye className="w-5 h-5 text-black align-middle" />}
+                          </button>
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
