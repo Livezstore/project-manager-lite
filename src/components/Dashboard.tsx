@@ -4,13 +4,28 @@ import { Progress } from "@/components/ui/progress";
 import { useProjects } from "@/hooks/useProjects";
 import { useRequirements } from "@/hooks/useRequirements";
 import { usePayments } from "@/hooks/usePayments";
-import { FolderOpen, FileText, CreditCard, DollarSign } from "lucide-react";
+import { FolderOpen, FileText, CreditCard, DollarSign, Eye, EyeOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useState } from "react";
 
 export function Dashboard() {
   const { projects, loading: loadingProjects } = useProjects();
   const { requirements, loading: loadingRequirements } = useRequirements();
   const { payments, loading: loadingPayments } = usePayments();
+
+  const [showEarnings, setShowEarnings] = useState(false);
+  const earningsTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleToggleEarnings = () => {
+    if (showEarnings) {
+      setShowEarnings(false);
+      if (earningsTimeout.current) clearTimeout(earningsTimeout.current);
+    } else {
+      setShowEarnings(true);
+      if (earningsTimeout.current) clearTimeout(earningsTimeout.current);
+      earningsTimeout.current = setTimeout(() => setShowEarnings(false), 5000);
+    }
+  };
 
   if (loadingProjects || loadingRequirements || loadingPayments) {
     return (
@@ -115,7 +130,17 @@ export function Dashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">৳{totalEarnings.toLocaleString()}</div>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {showEarnings ? `৳${totalEarnings.toLocaleString()}` : '*****'}
+              <button
+                className="ml-1 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                onClick={handleToggleEarnings}
+                type="button"
+                aria-label={showEarnings ? 'Hide earnings' : 'Show earnings'}
+              >
+                {showEarnings ? <EyeOff className="w-5 h-5 text-blue-600 align-middle" /> : <Eye className="w-5 h-5 text-blue-600 align-middle" />}
+              </button>
+            </div>
             <p className="text-xs text-muted-foreground">
               {pendingPayments} payments pending
             </p>
@@ -160,7 +185,17 @@ export function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">৳{project.budget.toLocaleString()}</p>
+                    <p className="font-semibold flex items-center gap-2">
+                      {showEarnings ? `৳${project.budget.toLocaleString()}` : '*****'}
+                      <button
+                        className="ml-1 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                        onClick={handleToggleEarnings}
+                        type="button"
+                        aria-label={showEarnings ? 'Hide budget' : 'Show budget'}
+                      >
+                        {showEarnings ? <EyeOff className="w-5 h-5 text-blue-600 align-middle" /> : <Eye className="w-5 h-5 text-blue-600 align-middle" />}
+                      </button>
+                    </p>
                   </div>
                 </div>
               ))}
