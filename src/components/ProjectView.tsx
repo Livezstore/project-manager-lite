@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Requirement, Project } from "@/types";
 import { useRequirements } from "@/hooks/useRequirements";
 
@@ -26,6 +26,27 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
   const projectRequirements = requirements.filter(r => r.projectId === project.id);
   const completedRequirements = projectRequirements.filter(r => r.status === 'Done');
   const progressPercentage = projectRequirements.length > 0 ? (completedRequirements.length / projectRequirements.length) * 100 : 0;
+
+  const [showBudget, setShowBudget] = useState(false);
+  const budgetTimeout = useRef<NodeJS.Timeout | null>(null);
+  const handleToggleBudget = () => {
+    if (showBudget) {
+      setShowBudget(false);
+      if (budgetTimeout.current) clearTimeout(budgetTimeout.current);
+    } else {
+      setShowBudget(true);
+      if (budgetTimeout.current) clearTimeout(budgetTimeout.current);
+      budgetTimeout.current = setTimeout(() => setShowBudget(false), 5000);
+    }
+  };
+  function getDaysLeft(deadline: string | Date | null | undefined) {
+    if (!deadline) return '';
+    const d = typeof deadline === 'string' ? new Date(deadline) : deadline;
+    if (!d || isNaN(d.getTime())) return '';
+    const now = new Date();
+    const diff = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? `${diff} days` : 'Past due';
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,7 +89,17 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
               {project.clientPhone && <p><strong>Phone:</strong> {project.clientPhone}</p>}
               <p><strong>Start:</strong> {formatDate(project.start_date || project.startDate)}</p>
               <p><strong>Deadline:</strong> {formatDate(project.deadline || project.endDate)}</p>
-              <p><strong>Budget:</strong> ৳{project.budget.toLocaleString()}</p>
+              <p><strong>Days Left:</strong> {getDaysLeft(project.deadline || project.endDate)}</p>
+              <p className="flex items-center gap-2"><strong>Budget:</strong> {showBudget ? `৳${project.budget.toLocaleString()}` : '*****'}
+                <button
+                  className="ml-1 p-1 rounded hover:bg-gray-100 focus:outline-none"
+                  onClick={handleToggleBudget}
+                  type="button"
+                  aria-label={showBudget ? 'Hide budget' : 'Show budget'}
+                >
+                  {showBudget ? <EyeOff className="w-5 h-5 text-black align-middle" /> : <Eye className="w-5 h-5 text-black align-middle" />}
+                </button>
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium mb-2">Description</p>
